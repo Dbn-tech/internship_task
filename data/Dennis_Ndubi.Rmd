@@ -1,0 +1,378 @@
+---
+title: "Internship_Task"
+author: "Dennis Ndubi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+**CEMA Internship Task**
+
+The dataset for this analysis contains monthly data for children <5 years, disaggregated at a county level for the period January 2021 to June 2023.
+
+The dataset contains the following varibales:
+
+- Period (months from January 2021 to June 2023)
+- County (the 47 counties in Kenya)
+- Total number of children dewormed (Total Dewormed)
+-Number of children <5 years with acute malnutrition (Acute Malnutrition)
+- Number of children stunted (0-6 months, 6-23 months, 24-59 months)
+- Number of children <5 years with diarrhe (Diarrhea cases)
+- Number of children who are underweight (0-6 months, 6-23 months, 24-59 months)
+
+**Research Questions**
+
+- What is the prevalence of diarrhea cases across the counties?
+- what are the deworming efforts across the counties
+- What is the Prevalence of Acute Malnutrition across the counties?
+- What is the prevalence of Stunted Growth and underweight Across the counties?
+- Is there correlation between Stunted growth and presence of  underweight in children below 5 years.
+
+**Key Finding from the Analysis**
+
+The following are some of the insights gathered from the data set:
+
+* `Nairobi County` is performing well in terms of deworming efforts followed by `Nakuru County`, While `Nyandaru County` is the worst performing.
+* In terms of Acute Malnutrition cases, `Wajir county` tops     followed by `Turkana County`. This can be justified by the  prolonged droughts and hunger status experienced in those  areas.`Uasin Gishu County` has  the least cases hence the county  with most health children.
+* In terms of disease indication, `Nairobi County` followed by `Turkana County` tops among the counties with highest number of diarrhea cases   which might associated with poor hygiene while `Nyandarua county` has the least amount of diarrhea reported cases.
+* There is significant evidence that children who have stunted growth have high probability to  be underweight. Top counties with stunted growth cases are `Nairobi` and `Kilifi` while `Boment` has the least number of stunted growth cases. In terms of Underweight children,`Turkana` and `Nairobi` tops while Still `Bomet` has the least.
+
+*ANALYSIS*
+
+**Importing Necessary Libraries**
+
+```{r echo=TRUE, message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(scales)
+library(dplyr)
+library(tidyr)
+library(skimr)
+```
+
+**loading data**
+```{r}
+data<-read.csv("cema_internship_task_2023.csv", header = TRUE)
+```
+
+```{r}
+View(data) #Viewing the imported data
+```
+
+**Check if Data Imported Correctly**
+
+```{r}
+head(data,2) #the  top two observations
+```
+
+```{r }
+tail(data,2) #bottom 5 observations
+```
+
+```{r}
+nrow(data)# Number of records in the data set
+ncol(data) # Number of columns (attributes) in the data set
+dim(data) # shape of our data set
+```
+```{r}
+names(data) # column names of the data set
+```
+
+```{r}
+d_types=lapply(data,class) #checking datatypes
+d_types
+```
+
+**Renaming the Variables for clarity and assigning the  correct data types**
+
+```{r }
+data<-data %>% rename(Period=period,    
+County=county,                 
+Total_Dewormed=Total.Dewormed,        
+Acute_Malnutrition=Acute.Malnutrition,    
+Stunted_6_23_Months=stunted.6.23.months ,     
+Stunted_0_6_Months= stunted.0..6.months, 
+Stunted_24_59_Months=stunted.24.59.months,    
+Diarrhoea_Cases=diarrhoea.cases,
+Underweight_0_6_Months=Underweight.0..6.months,
+Underweight_6_23_Months=Underweight.6.23.months,
+Underweight_24_59_Months=Underweight.24.59.Months)
+
+colnames(data) #renamed columns
+
+```
+
+**Exploring the data set**
+
+```{r}
+skim_without_charts(data) #Summary of how the data set looks
+```
+
+```{r}
+data$Period<-as.Date(paste("01", data$Period, sep = "-"), format = "%d-%b-%Y")
+```
+
+```{r}
+d_types=lapply(data,class) #rechecking datatypes after typecasting
+d_types
+```
+
+**Dropping null values from our data set**
+
+```{r}
+data=drop_na(data)
+```
+
+**Top and Bottom 5 Counties with highest Acute Malnutrition cases**
+```{r echo=FALSE}
+Counnties_AM_Top<-data%>%
+  group_by(County)%>%
+  summarise(Agg_Acute_Mal=sum(Acute_Malnutrition))%>%
+  arrange(desc(Agg_Acute_Mal))%>%
+  select(County,Agg_Acute_Mal)
+Counnties_AM_Bottom<-data%>%
+  group_by(County)%>%
+  summarise(Agg_Acute_Mal=sum(Acute_Malnutrition))%>%
+  arrange(Agg_Acute_Mal)%>%
+  select(County,Agg_Acute_Mal)
+```
+
+```{r}
+Top5_C_by_AM<-head(Counnties_AM_Top,5)
+Top5_C_by_AM
+Bottom5_C_by_AM<-head(Counnties_AM_Bottom,5)
+Bottom5_C_by_AM
+```
+
+
+**Top  and Bottom 5 Counties with highest Deworming cases**
+```{r echo=FALSE,results='markup'}
+Counties_Top<-data%>%
+  group_by(County)%>%
+  summarise(Agg_T_Dewormed=sum(Total_Dewormed))%>%
+  arrange(desc(Agg_T_Dewormed))%>%
+  select(County,Agg_T_Dewormed)
+Counties_Bottom<-data%>%
+  group_by(County)%>%
+  summarise(Agg_T_Dewormed=sum(Total_Dewormed))%>%
+  arrange(Agg_T_Dewormed)%>%
+  select(County,Agg_T_Dewormed)
+
+```
+```{r}
+Top_5<-head(Counties_Top,5)
+Top_5
+Bottom_5<-head(Counties_Bottom,5)
+Bottom_5
+```
+
+
+**Top 5 Counties with highest Diarrhea Cases**
+```{r echo=FALSE}
+Counties_Top_D<-data%>%
+  group_by(County)%>%
+  summarise(Agg_Diarrhea=sum(Diarrhoea_Cases))%>%
+  arrange(desc(Agg_Diarrhea))%>%
+  select(County,Agg_Diarrhea)
+Counties_Bottom_D<-data%>%
+  group_by(County)%>%
+  summarise(Agg_Diarrhea=sum(Diarrhoea_Cases))%>%
+  arrange(Agg_Diarrhea)%>%
+  select(County,Agg_Diarrhea)
+```
+
+```{r}
+Top_5<-head(Counties_Top_D,5)
+Top_5
+Bottom_5<-head(Counties_Bottom_D,5)
+Bottom_5
+```
+
+**Top 5 Counties with highest Stunted Growth cases**
+```{r echo=FALSE}
+Counties_Top_S<-data%>%
+  group_by(County)%>%
+  mutate(Stunted_Overall=Stunted_0_6_Months+Stunted_6_23_Months+Stunted_24_59_Months)%>%
+  summarise(Agg_Stunted_Overall=sum(Stunted_Overall))%>%
+  arrange(desc(Agg_Stunted_Overall))%>%
+  select(County,Agg_Stunted_Overall)
+Counties_Bottom_S<-data%>%
+  group_by(County)%>%
+  mutate(Stunted_Overall=Stunted_0_6_Months+Stunted_6_23_Months+Stunted_24_59_Months)%>%
+  summarise(Agg_Stunted_Overall=sum(Stunted_Overall))%>%
+  arrange(Agg_Stunted_Overall)%>%
+  select(County,Agg_Stunted_Overall)
+```
+
+```{r}
+Top_5<-head(Counties_Top_S,5)
+Top_5
+Bottom_5<-head(Counties_Bottom_S,5)
+Bottom_5
+```
+
+**Top 5 Counties with highest Underweight cases**
+```{r echo=FALSE}
+Counties_Top_U<-data%>%
+  group_by(County)%>%
+  mutate(Underweight_Overall=Underweight_0_6_Months+Underweight_6_23_Months+Underweight_24_59_Months)%>%
+  summarise(Agg_Underweight_Overall=sum(Underweight_Overall))%>%
+  arrange(desc(Agg_Underweight_Overall))%>%
+  select(County,Agg_Underweight_Overall)
+Counties_Bottom_U<-data%>%
+  group_by(County)%>%
+  mutate(Underweight_Overall=Underweight_0_6_Months+Underweight_6_23_Months+Underweight_24_59_Months)%>%
+  summarise(Agg_Underweight_Overall=sum(Underweight_Overall))%>%
+  arrange(Agg_Underweight_Overall)%>%
+  select(County,Agg_Underweight_Overall)
+```
+
+```{r}
+Top_5<-head(Counties_Top_U,5)
+Top_5
+Bottom_5<-head(Counties_Bottom_U,5)
+Bottom_5
+```
+
+**Health Indicators**
+
+Variables taken into consideration are: 
+- Total_Dewormed  to indicate deworming efforts 
+- Acute_Multnutrition to show child nutrition
+
+```{r }
+Summary_dewormed=summary(data$Total_Dewormed)
+summary_mulnutrition=summary(data$Acute_Malnutrition)
+
+```
+
+Summary Statistics for Total Dewormed
+
+```{r}
+print(Summary_dewormed)
+```
+
+Summary Statistics for Acute Malnutrition
+
+```{r}
+print(summary_mulnutrition)
+```
+
+Dewarming trend over the period
+
+```{r}
+data1<-data%>%
+  group_by(County,Period)%>%
+  summarise(Agg_Total_Dewormed=sum(Total_Dewormed))%>%
+  select(Period,Agg_Total_Dewormed)
+ggplot(data1, aes(x = Period, y = Agg_Total_Dewormed)) +
+  geom_line(color = "blue") +
+  labs(title = "Time Series Visualization of Aggregate Total Dewormed",
+       x = "Period", y = "Aggregate Total Dewormed")+
+  scale_x_date(labels = date_format("%b %Y"))
+```
+
+Distribution of Mean Acute Malnutrition Across the counties per Year
+
+```{r}
+g_data<- data%>%group_by(Year=year(Period))%>%
+  summarize(Mean_Acute_Malnutrition = mean(Acute_Malnutrition))
+ggplot(g_data, aes(x = Year, y = Mean_Acute_Malnutrition)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  labs(title = "Mean Acute Malnutrition by Year",
+       x = "Year", y = "Mean Acute Malnutrition")
+```
+
+**Is there relationship between Stunted growth and underweight among children across the counties**
+
+Perform 3 correlations  per age-group
+- Stunted O_6 Months VS Overweight 0_6 Months
+```{r}
+ggplot(data=data,mapping = aes(x=Stunted_0_6_Months, y=Underweight_0_6_Months))+
+  geom_point()+
+  geom_smooth()+
+  labs(x="Stunted between 0-<6 Months", y="Underweight 0-<6 Months")
+lm1=lm(data=data,Underweight_0_6_Months~Stunted_0_6_Months)
+r_squared <- sprintf("R-squared = %.3f", summary(lm1)$r.squared)
+r_squared
+ 
+```
+
+- Stunted 6_23 Months VS Overweight 6_23 Months
+
+```{r}
+ggplot(data=data,mapping = aes(x=Stunted_6_23_Months, y=Underweight_6_23_Months))+
+  geom_point()+
+  geom_smooth()+
+  labs(x="Stunted between 6-23 Months", y="Underweight 6-23 Months")
+lm2=lm(data=data,Underweight_6_23_Months~Stunted_6_23_Months)
+r_squared <- sprintf("R-squared = %.3f", summary(lm2)$r.squared)
+r_squared
+ 
+```
+
+- Stunted 24-59 Months Vs Underweight 24-59 Months
+
+```{r}
+ggplot(data=data,mapping = aes(x=Stunted_24_59_Months, y=Underweight_24_59_Months))+
+  geom_point()+
+  geom_smooth()+
+  labs(x="Stunted between 24-59 Months", y="Underweight 24-59 Months")
+lm3=lm(data=data,Underweight_24_59_Months~Stunted_24_59_Months)
+r_squared <- sprintf("R-squared = %.3f", summary(lm3)$r.squared)
+r_squared
+ 
+```
+
+Overall Stunted Vs Underweight
+
+```{r}
+data<-data%>%
+  mutate(Stunted_Overall=Stunted_0_6_Months+Stunted_6_23_Months+Stunted_24_59_Months,Underweight_Overall=Underweight_0_6_Months+Underweight_6_23_Months+Underweight_24_59_Months)
+ggplot(data=data,mapping = aes(x=Stunted_Overall, y=Underweight_Overall))+
+  geom_point()+
+  geom_smooth()+
+  labs(x="Stunted_Overall", y="Underweight_Overall")
+lm_general=lm(data=data,Underweight_Overall~Stunted_Overall)
+r_squared <- sprintf("R-squared = %.3f", summary(lm_general)$r.squared)
+r_squared
+ 
+```
+
+Conclusion: There is strong correlation between stunted growth and underweight traits
+
+**Is there relationship between Acute Malnutrition  and Stunted growth/Underweight**
+
+```{r}
+ggplot(data=data,mapping = aes(x=Acute_Malnutrition, y=Stunted_Overall))+
+  geom_point()+
+  geom_smooth()+
+  labs(x="Acute_Malnutrition", y="Stunted_Overall")
+lm_1=lm(data=data,Stunted_Overall~Acute_Malnutrition)
+r_squared <- sprintf("R-squared = %.3f", summary(lm_1)$r.squared)
+r_squared
+ 
+```
+
+```{r}
+ggplot(data=data,mapping = aes(x=Acute_Malnutrition, y=Underweight_Overall))+
+  geom_point()+
+  geom_smooth()+
+  labs(x="Acute_Malnutrition", y="Underweight_Overall")
+lm_g=lm(data=data,Underweight_Overall~Acute_Malnutrition)
+r_squared <- sprintf("R-squared = %.3f", summary(lm_g)$r.squared)
+r_squared
+ 
+```
+
+**Distribution of diarrhea cases across the counties**
+
+```{r}
+data_agg_D <- data %>%
+  group_by(County) %>%
+  summarise(Agg_Diarrhea_cases = sum(Diarrhoea_Cases))
+ggplot(data_agg_D, aes(x = "All Counties", y = Agg_Diarrhea_cases)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Diarrhea Cases Across All Counties",
+       x = "Counties", y = "Aggregate Diarrhea Cases")
+```
+
